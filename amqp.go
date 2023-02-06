@@ -10,7 +10,7 @@ import (
 	"go.k6.io/k6/js/modules"
 )
 
-const version = "v0.3.0"
+const version = "v0.3.1"
 
 // AMQP type holds connection to a remote AMQP server.
 type AMQP struct {
@@ -18,6 +18,7 @@ type AMQP struct {
 	Connection *amqpDriver.Connection
 	Queue      *Queue
 	Exchange   *Exchange
+	Channel    *amqpDriver.Channel
 }
 
 // Options defines configuration options for an AMQP session.
@@ -70,18 +71,27 @@ func (amqp *AMQP) Start(options Options) error {
 	amqp.Connection = conn
 	amqp.Queue.Connection = conn
 	amqp.Exchange.Connection = conn
-	return err
-}
-
-// Publish delivers the payload using options provided.
-func (amqp *AMQP) Publish(options PublishOptions) error {
 	ch, err := amqp.Connection.Channel()
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = ch.Close()
-	}()
+	amqp.Channel = ch
+	return err
+}
+
+func (amqp *AMQP) CloseChannel() {
+	amqp.Channel.Close()
+}
+
+// Publish delivers the payload using options provided.
+func (amqp *AMQP) Publish(options PublishOptions) error {
+	if amqp.Channel.IsClosed() {
+		ch, err := amqp.Connection.Channel()
+		if err != nil {
+			return err
+		}
+		amqp.Channel = ch
+	}
 
 	publishing := amqpDriver.Publishing{
 		Headers:     options.Headers,
@@ -91,14 +101,15 @@ func (amqp *AMQP) Publish(options PublishOptions) error {
 	if options.ContentType == messagepack {
 		var jsonParsedBody interface{}
 
-		if err = json.Unmarshal([]byte(options.Body), &jsonParsedBody); err != nil {
+		if err := json.Unmarshal([]byte(options.Body), &jsonParsedBody); err != nil {
 			return err
 		}
 
-		publishing.Body, err = msgpack.Marshal(jsonParsedBody)
+		pb, err := msgpack.Marshal(jsonParsedBody)
 		if err != nil {
 			return err
 		}
+		publishing.Body = pb
 	} else {
 		publishing.Body = []byte(options.Body)
 	}
@@ -107,7 +118,7 @@ func (amqp *AMQP) Publish(options PublishOptions) error {
 		publishing.DeliveryMode = amqpDriver.Persistent
 	}
 
-	return ch.PublishWithContext(
+	return amqp.Channel.PublishWithContext(
 		context.Background(), // TODO: use vu context
 		options.Exchange,
 		options.QueueName,
