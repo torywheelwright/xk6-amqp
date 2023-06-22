@@ -1,4 +1,4 @@
-module github.com/ben-danzig/xk6-amqp
+module github.com/torywheelwright/xk6-amqp
 
 go 1.17
 
