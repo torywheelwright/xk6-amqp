@@ -49,7 +49,7 @@ type ConsumeOptions struct {
 }
 
 // ListenerType is the message handler implemented within JavaScript.
-type ListenerType func(string) error
+type ListenerType func(interface{}) error
 
 // ListenOptions defines options for subscribing to message(s) within a queue.
 type ListenOptions struct {
@@ -153,7 +153,8 @@ func (amqp *AMQP) Listen(options ListenOptions) error {
 
 	go func() {
 		for d := range msgs {
-			err = options.Listener(string(d.Body))
+			// FIXME: Is something supposed to happen with this error?
+			err = options.Listener(d)
 		}
 	}()
 	return err
