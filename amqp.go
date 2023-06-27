@@ -134,9 +134,9 @@ func (amqp *AMQP) Listen(options ListenOptions) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = ch.Close()
-	}()
+	// defer func() {
+	// 	_ = ch.Close()
+	// }()
 
 	msgs, err := ch.Consume(
 		options.QueueName,
