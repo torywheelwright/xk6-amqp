@@ -4,6 +4,7 @@ package amqp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	amqpDriver "github.com/rabbitmq/amqp091-go"
 	"github.com/vmihailenco/msgpack/v5"
@@ -154,10 +155,13 @@ func (amqp *AMQP) Listen(options ListenOptions) error {
 	go func() {
 		for d := range msgs {
 			// FIXME: Is something supposed to happen with this error?
-			err = options.Listener(d)
+			if options == nil:
+				fmt.PrintLn("OPTIONS NIL")
+				channel.close()
+			else:
+				options.Listener(d)
 		}
 	}()
-	return err
 }
 
 func init() {
