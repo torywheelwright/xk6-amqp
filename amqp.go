@@ -148,6 +148,7 @@ func (amqp *AMQP) Listen(options ListenOptions) error {
 		options.NoWait,
 		options.Args,
 	)
+
 	if err != nil {
 		return err
 	}
@@ -157,12 +158,14 @@ func (amqp *AMQP) Listen(options ListenOptions) error {
 			// FIXME: Is something supposed to happen with this error?
 			if options.Listener == nil {
 				fmt.Println("$$$ options.Listener NIL")
-				ch.close()
+				ch.Close()
 			} else {
 				options.Listener(d)
 			}
 		}
 	}()
+
+	return nil;
 }
 
 func init() {
