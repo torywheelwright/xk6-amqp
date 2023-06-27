@@ -155,11 +155,12 @@ func (amqp *AMQP) Listen(options ListenOptions) error {
 	go func() {
 		for d := range msgs {
 			// FIXME: Is something supposed to happen with this error?
-			if options == nil:
+			if options == nil {
 				fmt.PrintLn("OPTIONS NIL")
 				channel.close()
-			else:
+			} else {
 				options.Listener(d)
+			}
 		}
 	}()
 }
